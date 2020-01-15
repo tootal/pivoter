@@ -1,4 +1,17 @@
 /* 
+    This file contains the algorithm for listing all cliques
+    according to the algorithm of Jain et al. specified in 
+    "The power of pivoting for exact clique counting." (WSDM 2020).
+
+    This code is a modified version of the code of quick-cliques-1.0 library for counting 
+    maximal cliques by Darren Strash (first name DOT last name AT gmail DOT com).
+
+    Original author: Darren Strash (first name DOT last name AT gmail DOT com)
+
+    Copyright (c) 2011 Darren Strash. This code is released under the GNU Public License (GPL) 3.0.
+
+    Modifications Copyright (c) 2020 Shweta Jain
+    
     This program is free software: you can redistribute it and/or modify 
     it under the terms of the GNU General Public License as published by 
     the Free Software Foundation, either version 3 of the License, or 
@@ -23,13 +36,45 @@
 #include"LinkedList.h"
 #include"MemoryManager.h"
 #include"degeneracy_helper.h"
-#include"degeneracy_algorithm_cliques_E.h"
+#include"degeneracy_algorithm_cliques_V.h"
+// #include"nCr.h"
 
 extern double nCr[1001][401];
 
 
-/*! \brief List all maximal cliques in a given graph using the algorithm
-           by Eppstein et al. (ISAAC 2010/SEA 2011).
+/*! \brief Computes the vertex v in P union X that has the most neighbors in P,
+           and places P \ {neighborhood of v} in an array. These are the 
+           vertices to consider adding to the partial clique during the current
+           recursive call of the algorithm.
+
+    \param pivotNonNeighbors  An intially unallocated pointer, which will contain the set 
+                              P \ {neighborhood of v} when this function completes.
+
+    \param numNonNeighbors A pointer to a single integer, which has been preallocated,
+                           which will contain the number of elements in pivotNonNeighbors.
+ 
+    \param vertexSets An array containing sets of vertices divided into sets X, P, R, and other.
+ 
+    \param vertexLookup A lookup table indexed by vertex number, storing the index of that 
+                        vertex in vertexSets.
+
+    \param neighborsInP Maps vertices to arrays of neighbors such that 
+                        neighbors in P fill the first cells
+
+    \param numNeighbors An the neighbor of neighbors a vertex had in P,
+                        the first time this function is called, this bound is 
+                        used to keep us from allocating more than linear space.
+ 
+    \param beginX The index where set X begins in vertexSets.
+ 
+    \param beginP The index where set P begins in vertexSets.
+
+    \param beginR The index where set R begins in vertexSets.
+
+*/
+
+
+/*!
 
     \param adjList An array of linked lists, representing the input graph in the
                    "typical" adjacency list format.
@@ -47,13 +92,10 @@ extern double nCr[1001][401];
     \return the number of maximal cliques of the input graph.
 */
 
-void listAllCliquesDegeneracy_E(double* cliqueCounts, 
-                                      NeighborListArray** orderingArray,
-                                      int *ordering,
-                                      int *CSCindex,
-                                      int *CSCedges,
+void listAllCliquesDegeneracy_V( double * cliqueCounts, NeighborListArray** orderingArray, 
                                       int size, int max_k)
 {
+
     // vertex sets are stored in an array like this:
     // |--X--|--P--|
     int* vertexSets = (int *)Calloc(size, sizeof(int));
@@ -63,9 +105,8 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
 
     int** neighborsInP = (int **)Calloc(size, sizeof(int*));
     int* numNeighbors = (int *)Calloc(size, sizeof(int));
-
-    int i = 0;
-    int deg = 0;
+    
+    int i = 0, deg = 0;
 
     while(i<size)
     {
@@ -73,9 +114,10 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
         vertexSets[i] = i;
         neighborsInP[i] = (int *)Calloc(1, sizeof(int));
         numNeighbors[i] = 1;
+        if ((int)orderingArray[i]->laterDegree > deg) deg = (int)orderingArray[i]->laterDegree;
         i++;
     }
-    
+
     int beginX = 0;
     int beginP = 0;
     int beginR = size;
@@ -99,6 +141,7 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
                                                &beginX, &beginP, &beginR, 
                                                &newBeginX, &newBeginP, &newBeginR);
 
+
         // recursively compute maximal cliques containing vertex, some of its
         // later neighbors, and avoiding earlier neighbors
         int drop = 0;
@@ -106,10 +149,7 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
         memset(keepV, 0, MAX_CSIZE);
         memset(dropV, 0, MAX_CSIZE);
         keepV[keep-1] = vertex;
-        listAllCliquesDegeneracyRecursive_E(cliqueCounts,
-                                                  ordering,
-                                                  CSCindex,
-                                                  CSCedges,
+        listAllCliquesDegeneracyRecursive_V(cliqueCounts,
                                                   vertexSets, vertexLookup,
                                                   neighborsInP, numNeighbors,
                                                   newBeginX, newBeginP, newBeginR, keep, drop, keepV, dropV, max_k); 
@@ -134,7 +174,6 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
 
     return;
 }
-
 
 /*! \brief Recursively list all maximal cliques containing all of
            all vertices in R, some vertices in P and no vertices in X.
@@ -168,85 +207,33 @@ void listAllCliquesDegeneracy_E(double* cliqueCounts,
 
 */
 
-void listAllCliquesDegeneracyRecursive_E(double* cliqueCounts,
-                                               int *ordering,
-                                               int *CSCindex,
-                                               int *CSCedges,
+void listAllCliquesDegeneracyRecursive_V( double * cliqueCounts,
                                                int* vertexSets, int* vertexLookup,
                                                int** neighborsInP, int* numNeighbors,
-                                               int beginX, int beginP, int beginR,
-                                               int keep, int drop, int *keepV, int *dropV, int max_k)
+                                               int beginX, int beginP, int beginR, int keep, int drop, int *keepV, int *dropV, int max_k)
 {
     if ((beginP >= beginR) || (keep > max_k))
     {
-        int temp = 0;
-        for (int i=0; i<keep; i++)
+        double kkeepCliques = 0; // number of kcliques a vertex from "keep" is involved in
+        for (int i=drop; (i>=0) && (keep+drop-i <= max_k); i--) 
         {
-            for (int j=i+1; j<keep; j++)
+            int k = keep + drop - i;
+            kkeepCliques = nCr[drop][i];
+            for (int j=0; j<keep; j++)
             {
-                int u = keepV[i];
                 int v = keepV[j];
-                if (ordering[u] > ordering[v])
-                {
-                    temp = u;
-                    u = v;
-                    v = temp;
-                }
-
-                int index = findNbrCSC(u,v,CSCindex, CSCedges); // find the index of v in u's neighbor list
-
-                if (index == -1) fprintf(stderr, "Error. v not found in u's list\n");
-
-                for (int l=drop; (l>=0) && (keep+drop-l <= max_k); l--) 
-                {
-                    int k = keep + drop - l;
-                    cliqueCounts[(index*(max_k+1))+k] += nCr[drop][l];
-                }
+                cliqueCounts[v*(max_k+1)+k] += kkeepCliques;
             }
         }
-        for (int i=0; i<drop; i++)
+        double kdropCliques = 0;
+        for (int i=drop-1; (i>=0) && (keep+drop-i <= max_k); i--) 
         {
-            for (int j=i+1; j<drop; j++)
-            {
-                int u = dropV[i];
-                int v = dropV[j];
-                if (ordering[u] > ordering[v])
-                {
-                    temp = u;
-                    u = v;
-                    v = temp;
-                }
-                int index = findNbrCSC(u,v,CSCindex, CSCedges); // find the index of v in u's neighbor list
-                if (index == -1) fprintf(stderr, "Error. v not found in u's list\n");
-                for (int l=drop-2; (l>=0) && (keep+drop-l <= max_k); l--)
-                {
-                    int k = keep + drop - l;
-                    fflush(stderr);
-                    cliqueCounts[(index*(max_k+1))+k] += nCr[drop-2][l];
-                    fflush(stderr);
-                }
-            }
-        }
-
-        for (int i=0; i<keep; i++)
-        {
+            int k = keep + drop - i;
+            kdropCliques = nCr[drop-1][i];
             for (int j=0; j<drop; j++)
             {
-                int u = keepV[i];
                 int v = dropV[j];
-                if (ordering[u] > ordering[v])
-                {
-                    temp = u;
-                    u = v;
-                    v = temp;
-                }
-                int index = findNbrCSC(u,v,CSCindex, CSCedges); // find the index of v in u's neighbor list
-                if (index == -1) fprintf(stderr, "Error. v not found in u's list\n");
-                for (int l=drop-1; (l>=0) && (keep+drop-l <= max_k); l--)
-                {
-                    int k = keep + drop - l;
-                    cliqueCounts[(index*(max_k+1))+k] += nCr[drop-1][l];
-                }
+                cliqueCounts[v*(max_k+1)+k] += kdropCliques;
             }
         }
         return;
@@ -276,9 +263,6 @@ void listAllCliquesDegeneracyRecursive_E(double* cliqueCounts,
 
             int newBeginX, newBeginP, newBeginR;
 
-            // add vertex into partialClique, representing R.
-            // Link* vertexLink = addLast(partialClique, (int)vertex);
-
             // swap vertex into R and update all data structures 
             moveToRDegeneracyCliques( vertex, 
                                vertexSets, vertexLookup, 
@@ -292,10 +276,7 @@ void listAllCliquesDegeneracyRecursive_E(double* cliqueCounts,
             if (vertex == pivot)
             {
                 dropV[drop] = vertex;
-                listAllCliquesDegeneracyRecursive_E(cliqueCounts,
-                                                      ordering,
-                                                      CSCindex,
-                                                      CSCedges,
+                listAllCliquesDegeneracyRecursive_V(cliqueCounts,
                                                       vertexSets, vertexLookup,
                                                       neighborsInP, numNeighbors,
                                                       newBeginX, newBeginP, newBeginR, keep, drop+1, keepV, dropV, max_k);
@@ -303,10 +284,7 @@ void listAllCliquesDegeneracyRecursive_E(double* cliqueCounts,
             else
             {
                 keepV[keep] = vertex;
-                listAllCliquesDegeneracyRecursive_E(cliqueCounts,
-                                                      ordering,
-                                                      CSCindex,
-                                                      CSCedges,
+                listAllCliquesDegeneracyRecursive_V(cliqueCounts,
                                                       vertexSets, vertexLookup,
                                                       neighborsInP, numNeighbors,
                                                       newBeginX, newBeginP, newBeginR, keep+1, drop, keepV, dropV, max_k);

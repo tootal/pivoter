@@ -1,4 +1,17 @@
 /* 
+    This file contains the algorithm for listing all cliques
+    according to the algorithm of Jain et al. specified in 
+    "The power of pivoting for exact clique counting." (WSDM 2020).
+
+    This code is a modified version of the code of quick-cliques-1.0 library for counting 
+    maximal cliques by Darren Strash (first name DOT last name AT gmail DOT com).
+
+    Original author: Darren Strash (first name DOT last name AT gmail DOT com)
+
+    Copyright (c) 2011 Darren Strash. This code is released under the GNU Public License (GPL) 3.0.
+
+    Modifications Copyright (c) 2020 Shweta Jain
+    
     This program is free software: you can redistribute it and/or modify 
     it under the terms of the GNU General Public License as published by 
     the Free Software Foundation, either version 3 of the License, or 
@@ -19,7 +32,6 @@
 #include<sys/resource.h>
 #include<stdlib.h>
 #include<string.h>
-#include<libgen.h>
 
 
 #include"misc.h"
@@ -33,7 +45,7 @@ double nCr[1001][401];
 void populate_nCr()
 {
     FILE *infile;
-    infile = fopen("./nCr.txt","r");
+    infile = fopen("./src/nCr.txt","r");
     double d=0;
     if(infile==NULL)
     {
@@ -290,11 +302,10 @@ LinkedList** readInGraphAdjListToDoubleEdges(int* n, int* m, char *fpath)
     int u, v; // endvertices, to read edges.
 
     FILE *fp;
-    //fpath = "graphs/test.edges";
     fp = fopen (fpath,"r");
     if (!fp) 
     {
-        fprintf(stderr, "SORRY! Could not open input file.\n");
+        fprintf(stderr, "Could not open input file.\n");
         exit(1);
     }
 
@@ -305,7 +316,7 @@ LinkedList** readInGraphAdjListToDoubleEdges(int* n, int* m, char *fpath)
         fprintf(stderr, "problem with line 1 in input file\n");
         exit(1);
     }
-    
+
     LinkedList** adjList = (LinkedList**)Calloc(*n, sizeof(LinkedList*));
 
     int i = 0;
@@ -316,6 +327,7 @@ LinkedList** readInGraphAdjListToDoubleEdges(int* n, int* m, char *fpath)
     }
 
     i = 0;
+    // double maxv = 0;
     while(i < *m)
     {
         if (fscanf(fp, "%d %d\n", &u, &v)!=2)
@@ -323,6 +335,9 @@ LinkedList** readInGraphAdjListToDoubleEdges(int* n, int* m, char *fpath)
             printf("problem with line %d in input file, u=%d, v=%d\n", i+2, u, v);
             exit(1);
         }
+        // if ((u>= *n) || (v >= *n)) printf("u = %d, v = %d \n", u, v);
+        // if ((double) u > maxv) maxv = (double) u;
+        // if ((double) v > maxv) maxv = (double) v;
         assert(u < *n && u > -1);
         assert(v < *n && v > -1);
         assert(u != v);
@@ -332,273 +347,18 @@ LinkedList** readInGraphAdjListToDoubleEdges(int* n, int* m, char *fpath)
         
         i++;
     }
+    // printf("maxv = %lf \n", maxv);
     *m = (*m) * 2;
 
     fclose(fp);
-    printf("finished reading and creating adj list\n");
     return adjList;
 }
-
-
-// double* 
-void main_wrapper(char *file_path, char type, int max_clique_size, int data_flag, double *cliqueCounts)
-{
-    int n; // number of vertices
-    int m; // 2x number of edges
-
-    LinkedList** adjacencyList = readInGraphAdjListToDoubleEdges(&n, &m, file_path);
-
-    printf("About to call basename on %s\n", file_path);
-    char *gname = basename(file_path);
-
-    char *lastdot = strrchr (gname, '.');
-    if (lastdot != NULL)
-        *lastdot = '\0';
-
-    printf("About to call populate_nCr\n");
-    populate_nCr();
-
-    printf("About to call runAndPrintStatsCliques_new\n");
-//     double *cliqueCounts = 
-    runAndPrintStatsCliques_new(adjacencyList, n, gname, type, max_clique_size, data_flag,cliqueCounts);
-    printf("run and print cliques done\n");
-
-    int i = 0;
-    while(i<n)
-    {
-        destroyLinkedList(adjacencyList[i]);
-        i++;
-    }
-
-    Free(adjacencyList); 
-//     return cliqueCounts;
-}
-
-// double* 
-void runAndPrintStatsCliques_new(  LinkedList** adjListLinked,
-                               int n, const char * gname, 
-                               char T, int max_k, int flag_d, double* cliqueCounts)
-{
-    fflush(stderr);
-    int max_k_in = max_k;
-
-    clock_t start = clock();
-
-    double totalCliques = 0;
-    int deg = 0, m = 0;
-    FILE *fp;
-
-    if ((flag_d == 1) || (flag_d == 2))
-    {
-        
-        char *fname = (char *)Calloc(1000, sizeof(char));
-
-        strcpy(fname, "results/");
-        strcat(fname, gname);
-        char * s_max_k = (char *)Calloc(10,sizeof(char));
-        sprintf(s_max_k, "%d", max_k);
-        if (max_k > 0) {strcat(fname, "_"); strcat(fname, s_max_k);}
-        if (T == 'A')
-        {
-            if (flag_d == 2) strcat(fname, "_A_stat.txt");
-            else strcat(fname, "_A.txt");
-	    printf("made it to A");
-        }
-        else if (T == 'V') 
-        {
-            if (flag_d == 2) strcat(fname, "_V_stat.txt");
-            else strcat(fname, "_V.txt");
-	    printf("made it to V");
-        }
-        else 
-        {
-            if (flag_d == 2) strcat(fname, "_E_stat.txt");
-            else strcat(fname, "_E.txt");
-	    printf("made it to E");
-        }
-
-        fp = fopen (fname,"w");
-	printf("fname is %s\n",fname);
-        if (!fp) printf("Could not open output file.\n");
-    }
-
-    NeighborListArray** orderingArray = computeDegeneracyOrderArray(adjListLinked, n);
-    for (int i=0; i<n; i++)
-    {
-        if (deg < orderingArray[i]->laterDegree) deg = orderingArray[i]->laterDegree;
-        m += orderingArray[i]->laterDegree;
-    }
-
-    if (max_k == 0) max_k = deg + 1;
-
-    if (T == 'A')
-    {
-
-        double *nCalls = (double *)Calloc(1, sizeof(double));
-        double *sumP = (double *)Calloc(1, sizeof(double));
-        double *sqP = (double *)Calloc(1, sizeof(double));
-
-        //double *cliqueCounts = (double *) Calloc((max_k)+1, sizeof(double));
-        listAllCliquesDegeneracy_A(cliqueCounts, orderingArray, n, max_k, nCalls, sumP, sqP);
-        clock_t end = clock();
-       
-        printf("time,nCalls,sumP,sqP,max_k,degen\n");
-        printf("%lf,%lf,%lf,%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),*nCalls,*sumP,*sqP,max_k_in,deg);
-        if ((flag_d == 1) || (flag_d == 2))
-        {
-            fprintf(fp, "time,nCalls,sumP,sqP,max_k,degen\n");
-            fprintf(fp, "%lf,%lf,%lf,%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),*nCalls,*sumP,*sqP,max_k_in,deg);
-        }
-
-        if (flag_d == 1) fprintf(fp, "k, Ck\n");
-
-        for (int i=0; i<=max_k; i++)
-        {
-            if (cliqueCounts[i] != 0) 
-            {
-                printf("%d, %lf\n", i, cliqueCounts[i]); 
-                if (flag_d == 1) fprintf(fp, "%d, %lf\n", i, cliqueCounts[i]); 
-                totalCliques += cliqueCounts[i];
-            }
-        }
-
-        printf("\n%lf total cliques\n", totalCliques);
-        if (flag_d == 1) fprintf(fp, "\n%lf total cliques\n", totalCliques);
-
-        //Free(cliqueCounts);
-//         return cliqueCounts;
-    }
-    else if (T == 'V')
-    {
-        //double *cliqueCounts = (double *) Calloc(n*((max_k)+1), sizeof(double));
-        listAllCliquesDegeneracy_V(cliqueCounts, orderingArray, n, max_k);
-        clock_t end = clock();
-
-        double kcliques = 0;
-
-        printf("time,max_k,degen\n");
-        printf("%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),max_k_in, deg);
-        if ((flag_d == 1) || (flag_d == 2))
-        {
-            fprintf(fp,"time,max_k,degen\n");
-            fprintf(fp,"%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),max_k_in, deg);
-        }
-
-        if (flag_d == 1) fprintf(fp, "(v,k): Ck\n");
-
-        for (int j=1; j<=max_k; j++)
-        {
-            kcliques = 0;
-            for (int i=0; i<n; i++)
-            {
-                kcliques += cliqueCounts[(i*(max_k+1)) + j];
-                if ((cliqueCounts[(i*(max_k+1)) + j] != 0) && (flag_d == 1))fprintf(fp,"(%d, %d): %.0lf\n", i, j, cliqueCounts[(i*(max_k+1)) + j]); 
-            }
-
-            if (kcliques != 0)
-            {
-                printf("%d, %lf\n", j, (double) (kcliques)/(double)(j)); totalCliques += ((double)(kcliques)/(double)(j));
-            }
-        }
-        if (flag_d == 1) fprintf(fp,"\n%lf total cliques\n", totalCliques);
-
-        printf("\n%lf total cliques\n", totalCliques);
-        
-        //Free(cliqueCounts);
-//         return cliqueCounts;
-    }
-    else if (T == 'E')
-    {
-        int* ordering = (int *)Calloc(n, sizeof(int));
-        int* CSCindex = (int *)Calloc(n+1, sizeof(int));
-        int* CSCedges = (int *)Calloc(m, sizeof(int));
-
-        //double *cliqueCounts = (double *)Calloc(m*(max_k+1), sizeof(double));
-
-        int index = 0;
-        int degen = deg;
-
-        for (int i=0; i<n; i++)
-        {
-            ordering[orderingArray[i]->vertex] = (int)orderingArray[i]->orderNumber;
-            deg = orderingArray[i]->laterDegree;
-            CSCindex[i] = index;
-            memcpy(CSCedges+index, orderingArray[i]->later, (deg)*sizeof(int));
-            qsort(CSCedges+index, deg, sizeof(int), qsortComparator);
-            index += deg;   
-        }
-
-        CSCindex[n] = m;
-
-        listAllCliquesDegeneracy_E(cliqueCounts, 
-                                    orderingArray,
-                                    ordering,
-                                    CSCindex,
-                                    CSCedges,
-                                    n, max_k);
-
-        clock_t end = clock();
-
-        printf("time,max_k,degen\n");
-        printf("%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),max_k_in, degen);
-        if ((flag_d == 1) || (flag_d == 2))
-        {
-            fprintf(fp,"time,max_k,degen\n");
-            fprintf(fp,"%lf,%d,%d\n\n", (double)(end-start)/(double)(CLOCKS_PER_SEC),max_k_in, degen);
-        }
-    
-        if (flag_d == 1) fprintf(fp, "(u,v,k): Ck\n");
-        double *kcliques = (double *)Calloc(max_k+1, sizeof(double));
-
-        for (int i=0; i<n; i++)
-        {
-            for (int j=CSCindex[i]; j<CSCindex[i+1]; j++)
-            {
-                for (int k=2; k<=max_k; k++)
-                {
-                    if (cliqueCounts[((j*(max_k+1)) + k)] != 0) 
-                    {
-                        kcliques[k] += cliqueCounts[((j*(max_k+1)) + k)];
-                        if (flag_d == 1) fprintf (fp, "(%d, %d, %d): %.0lf\n", i, CSCedges[j], k, cliqueCounts[((j*(max_k+1)) + k)]);
-                    }
-                }
-            }
-        }
-
-        for (int k=2; k<=max_k; k++)
-        {
-            if (kcliques[k] != 0) 
-            {
-                printf("%d, %lf\n", k, 2*kcliques[k]/((double)k*((double)k-1))); 
-                totalCliques += 2*kcliques[k]/((double)k*((double)k-1));
-            }
-        }
-        
-        printf("\n%lf total cliques\n", totalCliques);
-        if (flag_d == 1) fprintf(fp,"\n%lf total cliques\n", totalCliques);
-
-        //Free(cliqueCounts);
-        Free(ordering);
-        Free(CSCindex);
-        Free(CSCedges);
-        Free(kcliques);
-//         return cliqueCounts;
-    }
-    else{
-        printf("input should be E,A,or V\n");
-        exit(1);
-    }
-
-    if (flag_d >= 1) fclose(fp);
-    Free(orderingArray);
-
-}
-
 
 void runAndPrintStatsCliques(  LinkedList** adjListLinked,
                                int n, const char * gname, 
                                char T, int max_k, int flag_d)
 {
+  //printf("In runAndPrint function.\n");
     fflush(stderr);
     int max_k_in = max_k;
 
@@ -608,6 +368,8 @@ void runAndPrintStatsCliques(  LinkedList** adjListLinked,
     int deg = 0, m = 0;
     FILE *fp;
 
+    //printf("Before if of flag_d.\n");
+    fflush(stdout);
     if ((flag_d == 1) || (flag_d == 2))
     {
         
@@ -622,27 +384,27 @@ void runAndPrintStatsCliques(  LinkedList** adjListLinked,
         {
             if (flag_d == 2) strcat(fname, "_A_stat.txt");
             else strcat(fname, "_A.txt");
-	    printf("made it to A");
         }
         else if (T == 'V') 
         {
             if (flag_d == 2) strcat(fname, "_V_stat.txt");
             else strcat(fname, "_V.txt");
-	    printf("made it to V");
         }
         else 
         {
             if (flag_d == 2) strcat(fname, "_E_stat.txt");
             else strcat(fname, "_E.txt");
-	    printf("made it to E");
         }
 
         fp = fopen (fname,"w");
-	printf("fname is %s\n",fname);
         if (!fp) printf("Could not open output file.\n");
     }
+    //printf("Before computeDegeneracy.\n");
+    fflush(stdout);
 
     NeighborListArray** orderingArray = computeDegeneracyOrderArray(adjListLinked, n);
+    //printf("Before for. After computeDegeneracy.\n");
+    fflush(stdout);
     for (int i=0; i<n; i++)
     {
         if (deg < orderingArray[i]->laterDegree) deg = orderingArray[i]->laterDegree;
@@ -724,7 +486,6 @@ void runAndPrintStatsCliques(  LinkedList** adjListLinked,
         printf("\n%lf total cliques\n", totalCliques);
         
         Free(cliqueCounts);
-
     }
     else if (T == 'E')
     {
@@ -769,11 +530,11 @@ void runAndPrintStatsCliques(  LinkedList** adjListLinked,
         if (flag_d == 1) fprintf(fp, "(u,v,k): Ck\n");
         double *kcliques = (double *)Calloc(max_k+1, sizeof(double));
 
-        for (int i=0; i<n; i++)
+        for (long i=0; i<n; i++)
         {
-            for (int j=CSCindex[i]; j<CSCindex[i+1]; j++)
+            for (long j=CSCindex[i]; j<CSCindex[i+1]; j++)
             {
-                for (int k=2; k<=max_k; k++)
+                for (long k=2; k<=max_k; k++)
                 {
                     if (cliqueCounts[((j*(max_k+1)) + k)] != 0) 
                     {
@@ -796,15 +557,10 @@ void runAndPrintStatsCliques(  LinkedList** adjListLinked,
         printf("\n%lf total cliques\n", totalCliques);
         if (flag_d == 1) fprintf(fp,"\n%lf total cliques\n", totalCliques);
 
-        Free(cliqueCounts);
         Free(ordering);
         Free(CSCindex);
         Free(CSCedges);
         Free(kcliques);
-    }
-    else{
-        printf("input should be E,A,or V\n");
-        exit(1);
     }
 
     if (flag_d >= 1) fclose(fp);
@@ -1002,6 +758,7 @@ void fillInPandXForRecursiveCallDegeneracyCliques( int vertex, int orderNumber,
     *pNewBeginR = *pBeginR;
     *pNewBeginP = *pBeginR;
 
+    //printf("Before 1st while\n");
     // swap later neighbors of vertex into P section of vertexSets
     int j = 0;
     while(j<orderingArray[orderNumber]->laterDegree)
@@ -1023,11 +780,17 @@ void fillInPandXForRecursiveCallDegeneracyCliques( int vertex, int orderNumber,
 
     // reset numNeighbors and neighborsInP for this vertex
     j = *pNewBeginP;
+    //printf("Before 2nd while\n");
     while(j<*pNewBeginR)
     {
         int vertexInP = vertexSets[j];
+        //printf("vertexInP = %d, numNeighbors[vertexInP]=%d\n", vertexInP, numNeighbors[vertexInP] );
+        //printf("Address being freed: %p\n", neighborsInP[vertexInP]);
         numNeighbors[vertexInP] = 0;
         Free(neighborsInP[vertexInP]);
+        //printf("Allocating %d space for neighborsInP[vertexInP].\n", min( *pNewBeginR-*pNewBeginP, 
+                                           //  orderingArray[vertexInP]->laterDegree 
+                                           //+ orderingArray[vertexInP]->earlierDegree));
         neighborsInP[vertexInP]= (int *)Calloc( min( *pNewBeginR-*pNewBeginP, 
                                              orderingArray[vertexInP]->laterDegree 
                                            + orderingArray[vertexInP]->earlierDegree), sizeof(int));
@@ -1038,6 +801,7 @@ void fillInPandXForRecursiveCallDegeneracyCliques( int vertex, int orderNumber,
     // count neighbors in P, and fill in array of neighbors
     // in P
     j = *pNewBeginP;
+    //printf("Before 3rd while\n");
     while(j<*pNewBeginR)
     {
         int vertexInP = vertexSets[j];

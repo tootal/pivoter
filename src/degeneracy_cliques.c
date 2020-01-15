@@ -1,4 +1,17 @@
 /* 
+    This file contains the algorithm for listing all cliques
+    according to the algorithm of Jain et al. specified in 
+    "The power of pivoting for exact clique counting." (WSDM 2020).
+
+    This code is a modified version of the code of quick-cliques-1.0 library for counting 
+    maximal cliques by Darren Strash (first name DOT last name AT gmail DOT com).
+
+    Original author: Darren Strash (first name DOT last name AT gmail DOT com)
+
+    Copyright (c) 2011 Darren Strash. This code is released under the GNU Public License (GPL) 3.0.
+
+    Modifications Copyright (c) 2020 Shweta Jain
+    
     This program is free software: you can redistribute it and/or modify 
     it under the terms of the GNU General Public License as published by 
     the Free Software Foundation, either version 3 of the License, or 
@@ -21,15 +34,12 @@
 #include<limits.h>
 #include<unistd.h> 
 #include<libgen.h>
-#include <getopt.h>
     
 #include"misc.h"
 #include"LinkedList.h"
 #include"MemoryManager.h"
 
-/* This code is for counting k-cliques, per-vertex k-cliques and per-edge k-cliques 
-by Shweta Jain (sjain12@ucsc.edu). This code modifies and uses the quick-cliques-1.0 library for counting 
-maximal cliques by Darren Strash (first name DOT last name AT gmail DOT com). */
+
 
 int main(int argc,char** argv)
 {
@@ -91,12 +101,7 @@ int main(int argc,char** argv)
     }
     
 
-    printf("Parsed all arguments. t = %c, max_k = %d, flag_d = %d.\n", t, max_k, flag_d);
-    
-//     main_wrapper(fpath, t, max_k, flag_d);
-
-
-
+    // printf("Parsed all arguments. t = %c, max_k = %d, flag_d = %d. About to get graph.\n", t, max_k, flag_d);
     LinkedList** adjacencyList = readInGraphAdjListToDoubleEdges(&n, &m, fpath);
 
     int i;
@@ -109,7 +114,7 @@ int main(int argc,char** argv)
 
 
     populate_nCr();
-
+  printf("about to call runAndPrint.\n");
     runAndPrintStatsCliques(adjacencyList, n, gname, t, max_k, flag_d);
 
 
