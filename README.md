@@ -23,15 +23,16 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License 
 along with this program.  If not, see <http://www.gnu.org/licenses/> 
+
 -------------
 
-This code can be used to calculate the number of k-cliques, per-vertex k-cliques and per-edge k-cliques in a graph. 
+This code can be used to calculate the number of global k-cliques, per-vertex k-cliques and per-edge k-cliques in a graph. 
 
-Getting the graph
+*Getting the graph*
 The graph is expected to be in the .edges format. This is a custom format that looks as follows:
 
-403398 2443411 
-0 1 
+403398 2443411
+0 1
 0 2
 
 First line has 2 integers separated by a space. The first integer is n: number of vertices and second is m: number of edges. This line should be followed by m lines, each having 2 integers representing the end vertices of an edge, separated by a space.
@@ -48,7 +49,7 @@ eg.:
 python sanitize.py ../graphs email-Enron.txt
 This will read the email-Enron.txt file from the "graphs" folder and write an email-Enron.edges in the same folder.
 
-Running the code
+*Running the code*
 From the main directory (that contains src, bin, results, graphs etc.) run
 
 make
@@ -61,8 +62,11 @@ To run the code, from the main directory, run the following command:
 where 
 
 file_path: path to file 
+
 type: A/V/E. A for just k-clique information, V for per-vertex k-cliques, E for per-edge k-cliques 
+
 max_clique_size: max_clique_size. If 0, calculates for all k 
+
 data_flag: 1 if information is to be output to a file, 0 otherwise
 
 eg.:
