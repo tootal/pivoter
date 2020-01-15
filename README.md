@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 This code can be used to calculate the number of global k-cliques, per-vertex k-cliques and per-edge k-cliques in a graph. 
 
 *Getting the graph*
+
 The graph is expected to be in the .edges format. This is a custom format that looks as follows:
 
 403398 2443411
@@ -50,9 +51,11 @@ python sanitize.py ../graphs email-Enron.txt
 This will read the email-Enron.txt file from the "graphs" folder and write an email-Enron.edges in the same folder.
 
 *Running the code*
+
 From the main directory (that contains src, bin, results, graphs etc.) run
 
 make
+
 to compile.
 
 To run the code, from the main directory, run the following command:
