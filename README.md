@@ -1,6 +1,5 @@
-This file contains the algorithm for counting all cliques
-according to the algorithm of Jain and Seshadhri, specified in 
-"The power of pivoting for exact clique counting." (WSDM 2020).
+These files contain the code for the algorithm for counting all cliques
+given by Jain and Seshadhri in "The power of pivoting for exact clique counting." (WSDM 2020).
 
 This code is a modified version of the code of quick-cliques-1.0 library for counting maximal cliques by Darren Strash (first name DOT last name AT gmail DOT com).
 
