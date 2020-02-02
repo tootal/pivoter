@@ -91,8 +91,6 @@ will count the number of global k-cliques for all k and store the stats in email
 
 will count the number of k-cliques per edge for all k but will not store the information in any file. Instead, it will simply print the total number of k-cliques obtained from the per-edge counts.
 
-There can be some loss of precision (depending on whether storing the numbers as double is lossy) because of which for the t=V and t=E options, some values may show as non-integers but we ignore this as in most applications we do not care beyond first few significant digits.
-
-Be careful when storing the information (esp. per-edge counts) to a result file as for some graphs the result file can become very large.
+There can be some loss of precision (depending on whether storing the numbers as double is lossy) because of which for the t=V and t=E options, some values may show as non-integers. Be careful when storing the information (esp. per-edge counts) to a result file as for some graphs the result file can become very large.
 
 If you find any bugs or have any questions, please contact Shweta Jain (sjain12@ucsc.edu).
