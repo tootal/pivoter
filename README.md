@@ -69,17 +69,23 @@ type: A/V/E. A for just k-clique information, V for per-vertex k-cliques, E for 
 
 max_clique_size: max_clique_size. If 0, calculates for all k 
 
-data_flag: 1 if information is to be output to a file, 0 otherwise
+data_flag: 
+
+0: prints global k-clique counts on the screen.
+
+1: prints global k-clique counts on the screen. Depending on the "type" flag, the global counts may be calculated using local k-clique counts. Outputs stats to an output file
+
+2: prints global k-clique counts on the screen. Outputs global, per-vertex or per-edge k-clique counts (depending on the "type" flag) to an output file 
 
 eg.:
 
 ./bin/degeneracy_cliques -i graphs/email-Enron.edges -t V -d 1 -k 6
 
-will count the number of k-cliques per vertex for k<=6 and store the information in amazon0601_6_V.txt file in "results" folder.
+will count the number of k-cliques per vertex for k<=6 and store the information in email-Enron_V.txt file in "results" folder.
 
 ./bin/degeneracy_cliques -i graphs/email-Enron.edges -t A -d 1 -k 0
 
-will count the number of k-cliques for all k and store the information in amazon0601_A.txt file in "results" folder.
+will count the number of k-cliques for all k and store the information in email-Enron_A.txt file in "results" folder.
 
 ./bin/degeneracy_cliques -i graphs/email-Enron.edges -t E -d 0 -k 0
 
