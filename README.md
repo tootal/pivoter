@@ -31,9 +31,9 @@ This code can be used to calculate the number of global k-cliques, per-vertex k-
 
 The graph is expected to be in the .edges format. This is a custom format that looks as follows:
 
-403398 2443411
-0 1
-0 2
+403398 2443411  
+0 1  
+0 2  
 
 First line has 2 integers separated by a space. The first integer is n: number of vertices and second is m: number of edges. This line should be followed by m lines, each having 2 integers representing the end vertices of an edge, separated by a space.
 
@@ -59,7 +59,7 @@ to compile.
 
 To run the code, from the main directory, run the following command:
 
-./degeneracy_cliques -i <file_path> -t <type> -k <max_clique_size> -d <data_flag>
+./bin/degeneracy_cliques -i <file_path> -t <type> -k <max_clique_size> -d <data_flag>
 
 where 
 
@@ -73,27 +73,25 @@ data_flag:
 
 0: prints global k-clique counts on the screen.
 
-1: prints global k-clique counts on the screen. Depending on the "type" flag, the global counts may be calculated using local k-clique counts. Outputs stats to an output file
+1: prints global k-clique counts on the screen. Outputs global, per-vertex or per-edge k-clique counts (depending on the "type" flag) to an output file. Depending on the "type" flag, the global counts may be calculated using local k-clique counts. 
 
-2: prints global k-clique counts on the screen. Outputs global, per-vertex or per-edge k-clique counts (depending on the "type" flag) to an output file 
+2: prints global k-clique counts on the screen. Outputs stats to an output file. Depending on the "type" flag, the global counts may be calculated using local k-clique counts. 
 
 eg.:
 
 ./bin/degeneracy_cliques -i graphs/email-Enron.edges -t V -d 1 -k 6
 
-will count the number of k-cliques per vertex for k<=6 and store the information in email-Enron_V.txt file in "results" folder.
+will count the number of k-cliques per vertex for k<=6 and store the counts in email-Enron_6_V.txt file in "results" folder.
 
-./bin/degeneracy_cliques -i graphs/email-Enron.edges -t A -d 1 -k 0
+./bin/degeneracy_cliques -i graphs/email-Enron.edges -t A -d 2 -k 0
 
-will count the number of k-cliques for all k and store the information in email-Enron_A.txt file in "results" folder.
+will count the number of global k-cliques for all k and store the stats in email-Enron_A_stat.txt file in "results" folder.
 
 ./bin/degeneracy_cliques -i graphs/email-Enron.edges -t E -d 0 -k 0
 
 will count the number of k-cliques per edge for all k but will not store the information in any file. Instead, it will simply print the total number of k-cliques obtained from the per-edge counts.
 
 There can be some loss of precision (depending on whether storing the numbers as double is lossy) because of which for the t=V and t=E options, some values may show as non-integers but we ignore this as in most applications we do not care beyond first few significant digits.
-
-The result files only store the non-zero values from the data.
 
 Be careful when storing the information (esp. per-edge counts) to a result file as for some graphs the result file can become very large.
 
