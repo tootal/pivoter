@@ -44,9 +44,11 @@ Graphs can be placed in the "graphs" folder.
 The "python" folder has a python script (you may have to use python2.7) that can be used to convert a graph from the SNAP datasets given here: https://snap.stanford.edu/data/index.html into the .edges format. Download and untar the graph in the "graphs" folder and run:
 
 python sanitize.py ../graphs <filename>
+
 eg.:
 
 python sanitize.py ../graphs email-Enron.txt
+
 This will read the email-Enron.txt file from the "graphs" folder and write an email-Enron.edges in the same folder.
 
 *Running the code*
@@ -63,7 +65,7 @@ To run the code, from the main directory, run the following command:
 
 where 
 
-file_path: path to file 
+file_path: path to .edges file 
 
 type: A/V/E. A for just k-clique information, V for per-vertex k-cliques, E for per-edge k-cliques 
 
